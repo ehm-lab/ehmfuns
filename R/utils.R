@@ -12,42 +12,50 @@
 #' @export
 vd_fp <- function(...) {
   root <- Sys.getenv("V_DRIVE")
-  if (root == "") stop("V_DRIVE root path not found! Set it by running
-                       *usethis::edit_r_environ()* in the console, opening
-                       .Renviron, and adding V_DRIVE = yourVDRIVEpath")
+  if (root == "") stop(
+    "V_DRIVE root path not found! Set it by running *usethis::edit_r_environ()* in the console, opening .Renviron, and adding V_DRIVE = yourVDRIVEpath"
+    )
   file.path(root, ...)
 }
 
-#' Mirror Files from Network Drive to Local Project
+#' Efficiently copies specific files or directories to a target directory.
 #'
-#' @description
-#' Efficiently copies files from a source root to a local directory using
-#' `robocopy` (Windows) or `rsync` (macOS/Linux). \cr
-#' Assumes destination folder name and V_DRIVE env. var.
-#'
-#' @param relative_paths Character vector of paths relative to `source_root`.
-#' @param source_root Base directory (defaults to `V_DRIVE` env var).
-#' @param local_root Destination directory (defaults to `./data`).
+#' @param relative_paths File or folder paths to copy relative to `source_root`.
+#' @param destination_folder Exact folder path where files will be copied to.
+#' @param source_root Base/project directory.
 #' @export
-copy_to_local <- function(relative_paths,
-                          source_root = Sys.getenv("V_DRIVE"),
-                          local_root = "./data") {
-
+copy_utility <- function(relative_paths, destination_folder = "", source_root = "") {
+  # Verify source root
   if (source_root == "") stop("Source root not found!")
+
+  # Create destination folder
+  if (!dir.exists(destination_folder)) dir.create(destination_folder, recursive = TRUE)
+
+  # Identify operating system
   is_win <- .Platform$OS.type == "windows"
 
   for (path in relative_paths) {
-    src  <- file.path(source_root, path)
-    dest <- file.path(local_root, path)
+    # Build absolute path
+    src <- file.path(source_root, path)
 
-    if (!dir.exists(dirname(dest))) dir.create(dirname(dest), recursive = TRUE)
+    # Determine path type
+    is_dir <- isTRUE(file.info(src)$isdir)
 
     if (is_win) {
-      system2("robocopy", args = c(shQuote(dirname(src)), shQuote(dirname(dest)),
-                                   shQuote(basename(src)), "/z", "/njh", "/njs"))
+      if (is_dir) {
+        # Set directory destination
+        dest_path <- file.path(destination_folder, basename(src))
+        # Robocopy directory structure
+        system2("robocopy", args = c(shQuote(src), shQuote(dest_path), "/E", "/z", "/njh", "/njs"))
+      } else {
+        # Robocopy single file
+        system2("robocopy", args = c(shQuote(dirname(src)), shQuote(destination_folder), shQuote(basename(src)), "/z", "/njh", "/njs"))
+      }
     } else {
-      system2("rsync", args = c("-auP", shQuote(src), shQuote(dest)))
+      # Rsync handles both
+      system2("rsync", args = c("-auP", shQuote(src), shQuote(destination_folder)))
     }
   }
   invisible(NULL)
 }
+
