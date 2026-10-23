@@ -1,11 +1,11 @@
 Package: ehmfuns
 Type: Package
-Title: What the Package Does (Title Case)
+Title: EHM Lab functions collection
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Arturo", "de la Cruz",
+      email = "lshad21@lshtm.ac.uk",
       role = c("aut", "cre")
     )
   )
